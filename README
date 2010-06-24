@@ -1,0 +1,54 @@
+
+spood is a spoofing DNS proxy with a vaguely obscene name. All in Erlang.
+
+
+WHAT IS IT
+
+spood is a DNS proxy that listens for requests on localhost and proxies
+the requests by spoofing the packets from the IP addresses of other
+clients. spood might be useful if you're using a DNS tunnel like sods:
+
+http://github.com/msantos/sods
+
+
+REQUIREMENTS
+
+* procket: http://github.com/msantos/procket
+* epcap: http://github.com/msantos/epcap
+
+
+SETUP
+
+1. Adjust src/spood.erl:
+
+Change the IP addresses/MAC addresses to your network.
+
+2. Build it and run:
+
+mkdir deps
+cd deps
+ln -s /path/to/procket .
+ln -s /path/to/epcap .
+make
+./start.sh
+
+
+TODO
+
+* add a ping function to spood
+    * call ICMP ping for {192,168,213,1}, 24
+    * add each host that responds to a list
+    * call list strategy
+
+* add ability to get mac addresses programmatically
+
+* allow user to specify name server address
+
+* support multiple name servers
+
+* add ability to turn on/off debug output
+
+* add sanity checks on sniffed DNS packets, like checking domain
+
+* convert packet manufacturing to use epcap_net
+
