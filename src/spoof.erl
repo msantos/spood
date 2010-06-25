@@ -67,6 +67,8 @@ init([Dev, {ClientMAC, Strategy}, {NSMAC, NSIP}]) ->
         discover ->
             {SA1,SA2,SA3,SA4} = packet:ipv4address(Socket, Dev),
             {learn, [{SA1,SA2,SA3,SA4}]};
+        {discover, IPList} ->
+            {learn, IPList};
         N -> N
     end,
 
