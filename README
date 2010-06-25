@@ -32,6 +32,21 @@ ln -s /path/to/epcap .
 make
 ./start.sh
 
+3. Test it:
+
+$ nslookup
+> server 127.0.0.1
+Default server: 127.0.0.1
+Address: 127.0.0.1#53
+> www.google.com
+Server:         127.0.0.1
+Address:        127.0.0.1#53
+
+Non-authoritative answer:
+www.google.com  canonical name = www.l.google.com.
+Name:   www.l.google.com
+Address: 173.194.33.104
+
 
 TODO
 
