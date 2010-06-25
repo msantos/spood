@@ -60,7 +60,8 @@ loop(Socket, NS) ->
 filter(NS, [
         #ether{},
         #ipv4{
-            saddr = NS
+            saddr = NS,
+            daddr = IP
         },
         #udp{
             sport = 53,
@@ -69,7 +70,8 @@ filter(NS, [
         },
         Payload
     ]) when Len > 0, Len < 512 ->
-    dns:send(Port, Payload);
+    dns:send(Port, Payload),
+    spoof:source(IP);
 filter(_,_) ->
     ok.
 

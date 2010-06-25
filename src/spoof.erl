@@ -34,7 +34,7 @@
 -include("epcap_net.hrl").
 -define(SERVER, ?MODULE).
 
--export([start_link/3, send/2]).
+-export([start_link/3, send/2, source/1]).
 -export([dns_query/3]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
         terminate/2, code_change/3]).
@@ -51,6 +51,9 @@
 send(Port, Data) when is_integer(Port), is_binary(Data) ->
     gen_server:call(?MODULE, {dns_query, Port, Data}).
 
+source(IP) when is_tuple(IP) ->
+    gen_server:call(?MODULE, {sourceip, IP}).
+
 
 start_link(Dev, Client, NS) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [Dev, Client, NS], []).
@@ -59,11 +62,19 @@ init([Dev, {ClientMAC, Strategy}, {NSMAC, NSIP}]) ->
     crypto:start(),
     {ok, Socket} = packet:socket(),
     Ifindex = packet:ifindex(Socket, Dev),
+
+    Source = case Strategy of
+        discover ->
+            {SA1,SA2,SA3,SA4} = packet:ipv4address(Socket, Dev),
+            {learn, [{SA1,SA2,SA3,SA4}]};
+        N -> N
+    end,
+
     {ok, #state{
             s = Socket,
             i = Ifindex,
             shost = ClientMAC,
-            saddr = Strategy,
+            saddr = Source,
 
             dhost = NSMAC,
             daddr = NSIP
@@ -78,6 +89,18 @@ handle_call({dns_query, Port, Data}, _From, #state{s = Socket, i = Ifindex} = St
             {packet, inet_dns:decode(Data)}
         ]),
     {reply, ok, State};
+% Add a new source IP address
+handle_call({sourceip, IP}, _From, #state{saddr = {learn, IPList}} = State) ->
+    N = case lists:member(IP, IPList) of
+        true -> IPList;
+        false -> [IP|IPList]
+    end,
+    {reply, ok, State#state{
+            saddr = {learn, N}
+        }};
+handle_call({sourceip, _IP}, _From, State) ->
+    {reply, ok, State};
+
 handle_call(_Request, _From, State) ->
     {reply, ok, State}.
 
@@ -164,15 +187,26 @@ dns_query(SourcePort, Data, #state{
     Data/binary
     >>.
 
+%%
+%% Strategies for choosing a source IP address
+%%
+
+% Single source IP address
 strategy(Address) when is_list(Address) ->
     {ok, SA} = inet_parse:address(Address),
     SA;
 strategy({_,_,_,_} = SA) ->
     SA;
-strategy({list, [IPList]}) when is_tuple(IPList) ->
-    error_logger:info_report([{iplist, IPList}]),
-    IPList;
+
+% A manually specified list
 strategy({list, IPList}) when is_list(IPList) ->
     error_logger:info_report([{shuffle, IPList}]),
-    lists:nth(crypto:rand_uniform(1, length(IPList)), IPList).
+    lists:nth(crypto:rand_uniform(1, length(IPList)+1), IPList);
+
+% Learn what's on the network
+% XXX should add a timeout to force removal of stale entries
+strategy({learn , IPList}) when is_list(IPList) ->
+    error_logger:info_report([{discovered, IPList}]),
+    lists:nth(crypto:rand_uniform(1, length(IPList)+1), IPList).
+
 

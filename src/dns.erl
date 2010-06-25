@@ -47,7 +47,7 @@
 
 
 send(Port, Data) when is_integer(Port), is_binary(Data) ->
-    gen_server:call(?MODULE, {sniff, Port, Data}).
+    gen_server:call(?MODULE, {snuff, Port, Data}).
 
 start_link() ->
     start_link(?DNS_PORT).
@@ -71,9 +71,9 @@ init([Port]) ->
 
 
 % Sniffed reply
-handle_call({sniff, Port, Data}, _From, #state{s = Socket} = State) ->
+handle_call({snuff, Port, Data}, _From, #state{s = Socket} = State) ->
     ok = gen_udp:send(Socket,  {127,0,0,1}, Port, Data),
-    error_logger:error_report([
+    error_logger:info_report([
             {port, Port},
             {decode, inet_dns:decode(Data)}
         ]),

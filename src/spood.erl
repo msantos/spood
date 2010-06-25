@@ -36,16 +36,16 @@
 
 
 start() ->
-    start("eth0",
+    start("ath0",
         % Client
-        {{16#00,16#15,16#af,16#59,16#08,16#26}, {list, [{192,168,213,110}, {192,168,213,94}]}},
+        {{16#00,16#15,16#af,16#59,16#08,16#26}, discover},
 
         % Nameserver
         {{16#00,16#16,16#b6,16#b5,16#3e,16#c6}, {192,168,213,1}}
     ).
 start(Dev, Client, Nameserver) ->
-    dns:start_link(),
     spoof:start_link(Dev, Client, Nameserver),
-    spawn(sniff, service, [Dev]).
+    dns:start_link(),
+    spawn(snuff, service, [Dev]).
 
 
