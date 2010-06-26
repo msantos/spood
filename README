@@ -19,11 +19,7 @@ REQUIREMENTS
 
 SETUP
 
-1. Adjust src/spood.erl:
-
-Change the IP addresses/MAC addresses to your network.
-
-2. Build it and run:
+1. Build it and run:
 
 mkdir deps
 cd deps
@@ -32,7 +28,7 @@ ln -s /path/to/epcap .
 make
 ./start.sh
 
-3. Test it:
+2. Test it:
 
 $ nslookup
 > server 127.0.0.1
