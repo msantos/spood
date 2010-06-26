@@ -31,12 +31,13 @@
 
 -module(spood).
 -export([start/0,start/1]).
+-export([device/1,nameserver/1]).
 
 
 start() ->
     start([]).
 start(Options) ->
-    Dev = proplists:get_value(dev, Options, "ath0"),
+    Dev = device(proplists:get_value(dev, Options)),
 
     Smac = proplists:get_value(srcmac, Options),
     Dmac = proplists:get_value(dstmac, Options),
@@ -55,5 +56,22 @@ nameserver(undefined) ->
     proplists:get_value(nameserver, PL);
 nameserver(NS) ->
     NS.
+
+device(undefined) ->
+    {ok, S} = procket:listen(0, [{protocol, udp}, {family, inet}, {type, dgram}]),
+    Dev = hd([ If || If <- packet:iflist(), ipcheck(S, If) ]),
+    procket:close(S),
+    Dev;
+device(Dev) ->
+    Dev.
+
+ipcheck(S, If) ->
+    try packet:ipv4address(S, If) of
+        {127,_,_,_} -> false;
+        {169,_,_,_} -> false;
+        _ -> true
+    catch
+        error:_ -> false
+    end.
 
 

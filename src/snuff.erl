@@ -38,7 +38,7 @@
 service(Dev, NS) ->
     {ok, Socket} = packet:socket(),
     ok = packet:promiscuous(Socket, packet:ifindex(Socket, Dev)),
-    error_logger:info_report({ns,NS}),
+    error_logger:info_report([{dev, Dev}, {ns,NS}]),
     loop(Socket, NS).
 
 loop(Socket, NS) ->
