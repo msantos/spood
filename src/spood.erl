@@ -30,22 +30,30 @@
 %% POSSIBILITY OF SUCH DAMAGE.
 
 -module(spood).
--export([start/0,start/3]).
-
--define(DNS_PORT, 53).
+-export([start/0,start/1]).
 
 
 start() ->
-    start("ath0",
-        % Client
-        {{16#00,16#15,16#af,16#59,16#08,16#26}, discover},
+    start([]).
+start(Options) ->
+    Dev = proplists:get_value(dev, Options, "ath0"),
 
-        % Nameserver
-        {{16#00,16#16,16#b6,16#b5,16#3e,16#c6}, {192,168,213,1}}
-    ).
-start(Dev, Client, Nameserver) ->
-    spoof:start_link(Dev, Client, Nameserver),
+    Smac = proplists:get_value(srcmac, Options),
+    Dmac = proplists:get_value(dstmac, Options),
+
+    Saddr = proplists:get_value(saddr, Options, discover),
+    Daddr = nameserver(proplists:get_value(nameserver, Options)),
+
+    spoof:start_link(Dev, {Smac,Saddr}, {Dmac, Daddr}),
     dns:start_link(),
-    spawn(snuff, service, [Dev]).
+    spawn(snuff, service, [Dev, Daddr]).
+
+
+nameserver(undefined) ->
+    {ok, PL} = inet_parse:resolv(
+        proplists:get_value(resolv_conf, inet_db:get_rc(), "/etc/resolv.conf")),
+    proplists:get_value(nameserver, PL);
+nameserver(NS) ->
+    NS.
 
 

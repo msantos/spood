@@ -63,6 +63,16 @@ init([Dev, {ClientMAC, Strategy}, {NSMAC, NSIP}]) ->
     {ok, Socket} = packet:socket(),
     Ifindex = packet:ifindex(Socket, Dev),
 
+    SrcMAC = case ClientMAC of
+        undefined -> packet:macaddress(Socket, Dev);
+        M1 -> M1
+    end,
+
+    DstMAC = case NSMAC of
+        undefined -> packet:arplookup(Socket, Dev, NSIP);
+        M2 -> M2
+    end,
+
     Source = case Strategy of
         discover ->
             {SA1,SA2,SA3,SA4} = packet:ipv4address(Socket, Dev),
@@ -75,10 +85,10 @@ init([Dev, {ClientMAC, Strategy}, {NSMAC, NSIP}]) ->
     {ok, #state{
             s = Socket,
             i = Ifindex,
-            shost = ClientMAC,
+            shost = SrcMAC,
             saddr = Source,
 
-            dhost = NSMAC,
+            dhost = DstMAC,
             daddr = NSIP
         }}.
 

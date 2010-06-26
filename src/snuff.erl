@@ -30,17 +30,14 @@
 %% POSSIBILITY OF SUCH DAMAGE.
 
 -module(snuff).
--export([service/1]).
+-export([service/2]).
 
 -include("epcap_net.hrl").
 
 
-service(Dev) ->
+service(Dev, NS) ->
     {ok, Socket} = packet:socket(),
     ok = packet:promiscuous(Socket, packet:ifindex(Socket, Dev)),
-    {ok, PL} = inet_parse:resolv(
-        proplists:get_value(resolv_conf, inet_db:get_rc(), "/etc/resolv.conf")),
-    NS = proplists:get_value(nameserver, PL),
     error_logger:info_report({ns,NS}),
     loop(Socket, NS).
 
