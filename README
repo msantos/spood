@@ -55,10 +55,6 @@ TODO
     * add each host that responds to a list
     * call list strategy
 
-* add ability to get mac addresses programmatically
-
-* allow user to specify name server address
-
 * support multiple name servers
 
 * add ability to turn on/off debug output
