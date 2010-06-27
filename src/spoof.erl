@@ -69,7 +69,7 @@ init([Dev, {ClientMAC, Strategy}, {NSMAC, NSIP}]) ->
     end,
 
     DstMAC = case NSMAC of
-        undefined -> packet:arplookup(Socket, Dev, NSIP);
+        undefined -> packet:arplookup(NSIP);
         M2 -> M2
     end,
 
