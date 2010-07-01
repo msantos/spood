@@ -59,7 +59,7 @@ nameserver(NS) ->
 
 device(undefined) ->
     {ok, S} = procket:listen(0, [{protocol, udp}, {family, inet}, {type, dgram}]),
-    Dev = hd([ If || If <- packet:iflist(), ipcheck(S, If) ]),
+    [Dev|_] = [ If || If <- packet:iflist(), ipcheck(S, If) ],
     procket:close(S),
     Dev;
 device(Dev) ->
