@@ -21,10 +21,6 @@ SETUP
 
 1. Build it and run:
 
-mkdir deps
-cd deps
-ln -s /path/to/procket .
-ln -s /path/to/epcap .
 make
 ./start.sh
 

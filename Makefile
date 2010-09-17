@@ -1,16 +1,13 @@
 
-ERL=erl
-APP=spood
+REBAR=$(shell which rebar || echo ./rebar)
 
-all: dir erl
+all: deps compile
 
-dir:
-	-@mkdir -p ebin deps
-
-erl:
-	@$(ERL) -noinput +B \
-		-eval 'case make:all() of up_to_date -> halt(0); error -> halt(1) end.'
+compile:
+	@$(REBAR) compile
 
 clean:  
-	@rm -fv ebin/*.beam
+	@$(REBAR) clean
 
+deps:
+	@$(REBAR) get-deps
