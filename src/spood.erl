@@ -31,47 +31,37 @@
 
 -module(spood).
 -export([start/0,start/1]).
--export([device/1,nameserver/1]).
+-export([nameserver/0, macaddr/1]).
 
 
 start() ->
     start([]).
 start(Options) ->
-    Dev = device(proplists:get_value(dev, Options)),
-
-    Smac = proplists:get_value(srcmac, Options),
-    Dmac = proplists:get_value(dstmac, Options),
+    Dev = proplists:get_value(dev, Options, hd(packet:default_interface())),
 
     Saddr = proplists:get_value(saddr, Options, discover),
-    Daddr = nameserver(proplists:get_value(nameserver, Options)),
+    Daddr = proplists:get_value(nameserver, Options, nameserver()),
+
+    Smac = proplists:get_value(srcmac, Options, macaddr({client, Dev})),
+    Dmac = proplists:get_value(dstmac, Options, macaddr({server, Daddr})),
 
     spoof:start_link(Dev, {Smac,Saddr}, {Dmac, Daddr}),
     dns:start_link(),
     spawn(snuff, service, [Dev, Daddr]).
 
-
-nameserver(undefined) ->
+nameserver() ->
     {ok, PL} = inet_parse:resolv(
         proplists:get_value(resolv_conf, inet_db:get_rc(), "/etc/resolv.conf")),
-    proplists:get_value(nameserver, PL);
-nameserver(NS) ->
-    NS.
+    proplists:get_value(nameserver, PL).
 
-device(undefined) ->
-    {ok, S} = procket:listen(0, [{protocol, udp}, {family, inet}, {type, dgram}]),
-    [Dev|_] = [ If || If <- packet:iflist(), ipcheck(S, If) ],
-    procket:close(S),
-    Dev;
-device(Dev) ->
-    Dev.
+macaddr({client, Dev}) ->
+    {ok, [{hwaddr, MAC}]} = inet:ifget(Dev, [hwaddr]),
+    list_to_tuple(MAC);
+macaddr({server, IPAddr}) ->
+    % Force an ARP cache entry
+    {ok, Socket} = gen_udp:open(0, [{active, false}]),
+    ok = gen_udp:send(Socket, IPAddr, 53, <<>>),
+    ok = gen_udp:close(Socket),
 
-ipcheck(S, If) ->
-    try packet:ipv4address(S, If) of
-        {127,_,_,_} -> false;
-        {169,_,_,_} -> false;
-        _ -> true
-    catch
-        error:_ -> false
-    end.
-
+    packet:arplookup(IPAddr).
 

@@ -58,20 +58,10 @@ source(IP) when is_tuple(IP) ->
 start_link(Dev, Client, NS) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [Dev, Client, NS], []).
 
-init([Dev, {ClientMAC, Strategy}, {NSMAC, NSIP}]) ->
+init([Dev, {SrcMAC, Strategy}, {DstMAC, NSIP}]) ->
     crypto:start(),
     {ok, Socket} = packet:socket(),
     Ifindex = packet:ifindex(Socket, Dev),
-
-    SrcMAC = case ClientMAC of
-        undefined -> packet:macaddress(Socket, Dev);
-        M1 -> M1
-    end,
-
-    DstMAC = case NSMAC of
-        undefined -> packet:arplookup(NSIP);
-        M2 -> M2
-    end,
 
     Source = case Strategy of
         discover ->
