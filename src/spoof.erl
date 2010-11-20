@@ -39,6 +39,9 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
         terminate/2, code_change/3]).
 
+-define(IPV4HDRLEN, 20).
+-define(UDPHDRLEN, 8).
+
 -record(state, {
         s,          % socket
         i,          % interface index
@@ -129,65 +132,34 @@ dns_query(SourcePort, Data, #state{
 
     {SA1,SA2,SA3,SA4} = strategy(Strategy),
 
-    Id = 1,
-    TTL = 64,
+    UDPlen = ?UDPHDRLEN + byte_size(Data),
 
-    UDPlen = 8 + byte_size(Data),
+    Ether = #ether{
+        dhost = <<DM1,DM2,DM3,DM4,DM5,DM6>>,
+        shost = <<SM1,SM2,SM3,SM4,SM5,SM6>>
+    },
 
-    IPlen = 20 + UDPlen,
+    IP = #ipv4{
+        id = 1,
+        p = ?IPPROTO_UDP,
+        len = ?IPV4HDRLEN + UDPlen,
+        saddr = {SA1,SA2,SA3,SA4},
+        daddr = {DA1,DA2,DA3,DA4}
+    },
 
-    IPsum = epcap_net:makesum(
-        <<
-        % IPv4 header
-        4:4, 5:4, 0:8, IPlen:16,
-        Id:16, 0:1, 1:1, 0:1,
-        0:13, TTL:8, 17:8, 0:16,
-        SA1:8, SA2:8, SA3:8, SA4:8,
-        DA1:8, DA2:8, DA3:8, DA4:8
-        >>
-    ),
+    UDP = #udp{
+        sport = SourcePort,
+        dport = 53,
+        ulen = UDPlen
+    },
 
-    UDPpad = case UDPlen rem 2 of 
-        0 -> 0;
-        1 -> 8
-    end,
+    IPsum = epcap_net:makesum(IP),
+    UDPsum = epcap_net:makesum([IP, UDP, Data]),
 
-    UDPsum = epcap_net:makesum(
-        <<
-        SA1:8,SA2:8,SA3:8,SA4:8,
-        DA1:8,DA2:8,DA3:8,DA4:8,
-        0:8,
-        17:8,
-        UDPlen:16,
-
-        SourcePort:16,
-        53:16,
-        UDPlen:16,
-        0:16,
-        Data/binary,
-        0:UDPpad
-        >>),
-
-    <<
-    % Ethernet header
-    DM1:8,DM2:8,DM3:8,DM4:8,DM5:8,DM6:8,
-    SM1:8,SM2:8,SM3:8,SM4:8,SM5:8,SM6:8,
-    16#08, 16#00,
-
-    % IPv4 header
-    4:4, 5:4, 0:8, IPlen:16,
-    Id:16, 0:1, 1:1, 0:1,
-    0:13, TTL:8, 17:8, IPsum:16,
-    SA1:8, SA2:8, SA3:8, SA4:8,
-    DA1:8, DA2:8, DA3:8, DA4:8,
-
-    % UDP header
-    SourcePort:16,
-    53:16,
-    UDPlen:16,
-    UDPsum:16,
-    Data/binary
-    >>.
+    <<(epcap_net:ether(Ether))/bits,
+    (epcap_net:ipv4(IP#ipv4{sum = IPsum}))/bits,
+    (epcap_net:udp(UDP#udp{sum = UDPsum}))/bits,
+    Data/bits>>.
 
 %%
 %% Strategies for choosing a source IP address
