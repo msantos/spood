@@ -55,7 +55,7 @@ start_link(Port) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [Port], []).
 
 init([Port]) ->
-    {ok, FD} = procket:listen(53, [
+    {ok, FD} = procket:open(53, [
             {ip, {127,0,0,1}},
             {protocol, udp},
             {family, inet},

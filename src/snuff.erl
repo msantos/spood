@@ -43,7 +43,7 @@ service(Dev, NS) ->
 
 loop(Socket, NS) ->
     case procket:recvfrom(Socket, 65535) of
-        nodata ->
+        {error, eagain} ->
             timer:sleep(10),
             loop(Socket, NS);
         {ok, Data} ->

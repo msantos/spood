@@ -1,3 +1,3 @@
 #!/bin/sh
 
-exec erl -pa $PWD/ebin $PWD/deps/*/ebin $PWD/deps/*/deps/*/ebin -s spood start
+exec erl -pa $PWD/ebin $PWD/deps/*/ebin -s spood start
