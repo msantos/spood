@@ -31,7 +31,7 @@
 -module(spoof).
 -behaviour(gen_server).
 
--include("epcap_net.hrl").
+-include("pkt.hrl").
 -define(SERVER, ?MODULE).
 
 -export([start_link/3, send/2, source/1]).
@@ -153,12 +153,12 @@ dns_query(SourcePort, Data, #state{
         ulen = UDPlen
     },
 
-    IPsum = epcap_net:makesum(IP),
-    UDPsum = epcap_net:makesum([IP, UDP, Data]),
+    IPsum = pkt:makesum(IP),
+    UDPsum = pkt:makesum([IP, UDP, Data]),
 
-    <<(epcap_net:ether(Ether))/bits,
-    (epcap_net:ipv4(IP#ipv4{sum = IPsum}))/bits,
-    (epcap_net:udp(UDP#udp{sum = UDPsum}))/bits,
+    <<(pkt:ether(Ether))/bits,
+    (pkt:ipv4(IP#ipv4{sum = IPsum}))/bits,
+    (pkt:udp(UDP#udp{sum = UDPsum}))/bits,
     Data/bits>>.
 
 %%

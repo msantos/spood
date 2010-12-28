@@ -32,7 +32,7 @@
 -module(snuff).
 -export([service/2]).
 
--include("epcap_net.hrl").
+-include("pkt.hrl").
 
 
 service(Dev, NS) ->
@@ -47,7 +47,7 @@ loop(Socket, NS) ->
             timer:sleep(10),
             loop(Socket, NS);
         {ok, Data} ->
-            P = epcap_net:decapsulate(Data),
+            P = pkt:decapsulate(Data),
             filter(NS, P),
             loop(Socket, NS);
         Error ->
