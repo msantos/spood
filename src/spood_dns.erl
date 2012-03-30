@@ -1,4 +1,4 @@
-%% Copyright (c) 2010, Michael Santos <michael.santos@gmail.com>
+%% Copyright (c) 2010-2012, Michael Santos <michael.santos@gmail.com>
 %% All rights reserved.
 %%
 %% Redistribution and use in source and binary forms, with or without
@@ -28,7 +28,7 @@
 %% LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 %% ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 %% POSSIBILITY OF SUCH DAMAGE.
--module(dns).
+-module(spood_dns).
 -behaviour(gen_server).
 
 -include_lib("kernel/src/inet_dns.hrl").
@@ -97,5 +97,3 @@ terminate(_Reason, _State) ->
     ok.
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
-
-

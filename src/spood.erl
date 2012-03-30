@@ -1,4 +1,4 @@
-%% Copyright (c) 2010, Michael Santos <michael.santos@gmail.com>
+%% Copyright (c) 2010-2012, Michael Santos <michael.santos@gmail.com>
 %% All rights reserved.
 %%
 %% Redistribution and use in source and binary forms, with or without
@@ -28,7 +28,6 @@
 %% LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 %% ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 %% POSSIBILITY OF SUCH DAMAGE.
-
 -module(spood).
 -export([start/0,start/1]).
 -export([nameserver/0, macaddr/1]).
@@ -46,7 +45,7 @@ start(Options) ->
     Dmac = proplists:get_value(dstmac, Options, macaddr({server, Daddr})),
 
     spoof:start_link(Dev, {Smac,Saddr}, {Dmac, Daddr}),
-    dns:start_link(),
+    spood_dns:start_link(),
     spawn(snuff, service, [Dev, Daddr]).
 
 nameserver() ->
@@ -64,4 +63,3 @@ macaddr({server, IPAddr}) ->
     ok = gen_udp:close(Socket),
 
     packet:arplookup(IPAddr).
-

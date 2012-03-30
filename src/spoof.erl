@@ -1,4 +1,4 @@
-%% Copyright (c) 2010, Michael Santos <michael.santos@gmail.com>
+%% Copyright (c) 2010-2012, Michael Santos <michael.santos@gmail.com>
 %% All rights reserved.
 %%
 %% Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,7 @@
 -module(spoof).
 -behaviour(gen_server).
 
--include("pkt.hrl").
+-include_lib("pkt/include/pkt.hrl").
 -define(SERVER, ?MODULE).
 
 -export([start_link/3, send/2, source/1]).
@@ -182,5 +182,3 @@ strategy({list, IPList}) when is_list(IPList) ->
 strategy({learn , IPList}) when is_list(IPList) ->
     error_logger:info_report([{discovered, IPList}]),
     lists:nth(crypto:rand_uniform(1, length(IPList)+1), IPList).
-
-
