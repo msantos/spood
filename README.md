@@ -1,46 +1,45 @@
-
 spood is a spoofing DNS proxy with a vaguely obscene name. All in Erlang.
 
 
-WHAT IS IT
+# WHAT IS IT
 
 spood is a DNS proxy that listens for requests on localhost and proxies
 the requests by spoofing the packets from the IP addresses of other
 clients. spood might be useful if you're using a DNS tunnel like sods:
 
-http://github.com/msantos/sods
+    http://github.com/msantos/sods
 
 
-REQUIREMENTS
+# REQUIREMENTS
 
-* procket: http://github.com/msantos/procket
-* epcap: http://github.com/msantos/epcap
+    * procket: http://github.com/msantos/procket
+    * pkt: http://github.com/msantos/pkt
 
 
-SETUP
+# SETUP
 
 1. Build it and run:
 
-make
-./start.sh
+        make
+        ./start.sh
 
 2. Test it:
 
-$ nslookup
-> server 127.0.0.1
-Default server: 127.0.0.1
-Address: 127.0.0.1#53
-> www.google.com
-Server:         127.0.0.1
-Address:        127.0.0.1#53
+        $ nslookup
+        > server 127.0.0.1
+        Default server: 127.0.0.1
+        Address: 127.0.0.1#53
+        > www.google.com
+        Server:         127.0.0.1
+        Address:        127.0.0.1#53
 
-Non-authoritative answer:
-www.google.com  canonical name = www.l.google.com.
-Name:   www.l.google.com
-Address: 173.194.33.104
+        Non-authoritative answer:
+        www.google.com  canonical name = www.l.google.com.
+        Name:   www.l.google.com
+        Address: 173.194.33.104
 
 
-TODO
+# TODO
 
 * add a ping function to spood
     * call ICMP ping for {192,168,213,1}, 24
@@ -52,6 +51,3 @@ TODO
 * add ability to turn on/off debug output
 
 * add sanity checks on sniffed DNS packets, like checking domain
-
-* convert packet manufacturing to use epcap_net
-
