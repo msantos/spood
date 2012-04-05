@@ -53,9 +53,13 @@ nameserver() ->
         proplists:get_value(resolv_conf, inet_db:get_rc(), "/etc/resolv.conf")),
     proplists:get_value(nameserver, PL).
 
-macaddr({client, Dev}) ->
-    {ok, [{hwaddr, MAC}]} = inet:ifget(Dev, [hwaddr]),
-    list_to_tuple(MAC);
+macaddr({Type, Dev}) when is_binary(Dev) ->
+    macaddr({Type, binary_to_list(Dev)});
+macaddr({client, Dev}) when is_list(Dev) ->
+    {ok, Ifs} = inet:getifaddrs(),
+    Cfg = proplists:get_value(Dev, Ifs),
+    [MAC] = [ list_to_tuple(N) || {hwaddr, N} <- Cfg ],
+    MAC;
 macaddr({server, IPAddr}) ->
     % Force an ARP cache entry
     {ok, Socket} = gen_udp:open(0, [{active, false}]),
