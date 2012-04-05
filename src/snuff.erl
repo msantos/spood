@@ -67,6 +67,6 @@ filter(NS, [
         Payload
     ]) when Len > 0, Len < 512 ->
     spood_dns:send(Port, Payload),
-    spoof:source(IP);
+    spood_spoof:source(IP);
 filter(_,_) ->
     ok.

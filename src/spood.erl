@@ -44,7 +44,7 @@ start(Options) ->
     Smac = proplists:get_value(srcmac, Options, macaddr({client, Dev})),
     Dmac = proplists:get_value(dstmac, Options, macaddr({server, Daddr})),
 
-    spoof:start_link(Dev, {Smac,Saddr}, {Dmac, Daddr}),
+    spood_spoof:start_link(Dev, {Smac,Saddr}, {Dmac, Daddr}),
     spood_dns:start_link(),
     spawn(snuff, service, [Dev, Daddr]).
 

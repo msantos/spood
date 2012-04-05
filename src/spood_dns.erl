@@ -86,7 +86,7 @@ handle_cast(_Msg, State) ->
 
 % DNS request from client
 handle_info({udp, Socket, {127,0,0,1}, Port, Data}, #state{s = Socket} = State) ->
-    spoof:send(Port, Data),
+    spood_spoof:send(Port, Data),
     {noreply, State};
 % WTF?
 handle_info(Info, State) ->
