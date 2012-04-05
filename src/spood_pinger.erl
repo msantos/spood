@@ -30,15 +30,18 @@
 %% POSSIBILITY OF SUCH DAMAGE.
 -module(spood_pinger).
 
--export([start/1]).
+-export([start/1, start/2]).
 -export([range/2]).
 
--define(INTERVAL, 15*60000).   % 15 minute
+-define(INTERVAL, 15*60000).   % 15 minutes
 
 %% Populate the local ARP cache by periodically scanning the network
-start(Dev) when is_binary(Dev) ->
-    start(binary_to_list(Dev));
-start(Dev) when is_list(Dev) ->
+start(Dev) ->
+    start(Dev, ?INTERVAL).
+
+start(Dev, Interval) when is_binary(Dev) ->
+    start(binary_to_list(Dev), Interval);
+start(Dev, Interval) when is_list(Dev), Interval > 0 ->
     {ok, Ifs} = inet:getifaddrs(),
     Cfg = proplists:get_value(Dev, Ifs),
 
@@ -51,7 +54,7 @@ start(Dev) when is_list(Dev) ->
                 {active, false}
                 ]),
 
-    poll(Socket, ipv4_to_int(Network)+1, ipv4_to_int(Broadcast)).
+    poll(Socket, Interval, ipv4_to_int(Network)+1, ipv4_to_int(Broadcast)).
 
 range({A1,A2,A3,A4}, {M1,M2,M3,M4}) ->
     Addr = (A1 bsl 24) bor (A2 bsl 16) bor (A3 bsl 8) bor A4,
@@ -67,10 +70,10 @@ ipv4_to_int({A,B,C,D}) ->
     <<N:4/unsigned-integer-unit:8>> = <<A, B, C, D>>,
     N.
 
-poll(Socket, Start, End) ->
+poll(Socket, Interval, Start, End) ->
     scan(Socket, Start, End),
-    timer:sleep(?INTERVAL),
-    poll(Socket, Start, End).
+    timer:sleep(Interval),
+    poll(Socket, Interval, Start, End).
 
 scan(Socket, Address, End) when Address < End ->
     Port = crypto:rand_uniform(16#0FFF, 16#FFFF),

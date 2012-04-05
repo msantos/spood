@@ -46,7 +46,7 @@ start(Options) ->
 
     spood_spoof:start_link(Dev, {Smac,Saddr}, {Dmac, Daddr}),
     spood_dns:start_link(),
-    spawn(spood_pinger, start, [Dev]),
+    spawn(spood_pinger, start, [Dev, timer:minutes(15)]),
     spood_snuff:start_link(Dev, Daddr).
 
 nameserver() ->
