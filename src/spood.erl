@@ -47,7 +47,7 @@ start(Options) ->
     spood_spoof:start_link(Dev, {Smac,Saddr}, {Dmac, Daddr}),
     spood_dns:start_link(),
     spawn(spood_pinger, start, [Dev]),
-    spawn(spood_snuff, start_link, [Dev, Daddr]).
+    spood_snuff:start_link(Dev, Daddr).
 
 nameserver() ->
     {ok, PL} = inet_parse:resolv(
