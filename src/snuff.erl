@@ -29,32 +29,75 @@
 %% ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 %% POSSIBILITY OF SUCH DAMAGE.
 -module(snuff).
--export([service/2]).
+-behaviour(gen_server).
+
+-define(SERVER, ?MODULE).
 
 -include_lib("pkt/include/pkt.hrl").
 
+-export([start_link/2]).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+        terminate/2, code_change/3]).
 
-service(Dev, NS) ->
+-record(state, {
+        ns,         % real name server
+        port
+    }).
+
+
+start_link(Dev, NS) ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [Dev, NS], []).
+
+init([Dev, NS]) ->
     {ok, Socket} = packet:socket(),
     ok = packet:promiscuous(Socket, packet:ifindex(Socket, Dev)),
-    error_logger:info_report([{dev, Dev}, {ns,NS}]),
-    loop(Socket, NS).
 
-loop(Socket, NS) ->
-    case procket:recvfrom(Socket, 65535) of
-        {error, eagain} ->
-            timer:sleep(10),
-            loop(Socket, NS);
-        {ok, Data} ->
-            P = pkt:decapsulate(Data),
-            filter(NS, P),
-            loop(Socket, NS);
-        Error ->
-            error_logger:error_report(Error)
+    error_logger:info_report([
+            {dev, Dev},
+            {ns,NS}
+            ]),
+
+    Port = erlang:open_port({fd, Socket, Socket}, [stream, binary]),
+
+    {ok, #state{
+            ns = NS,
+            port = Port
+        }}.
+
+handle_call(_Request, _From, State) ->
+    {reply, ok, State}.
+
+handle_cast(_Msg, State) ->
+    {noreply, State}.
+
+handle_info({Port, {data, Data}}, #state{port = Port, ns = NS} = State) ->
+    spawn(fun() -> send(NS, Data) end),
+    {noreply, State};
+% WTF?
+handle_info(Info, State) ->
+    error_logger:error_report([{wtf, Info}]),
+    {noreply, State}.
+
+terminate(_Reason, _State) ->
+    ok.
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
+
+
+%%--------------------------------------------------------------------
+%%% Internal functions
+%%--------------------------------------------------------------------
+send(NS, Data) ->
+    P = pkt:decapsulate(Data),
+    case filter(NS, P) of
+        false ->
+            ok;
+        {ok, IP, Port, Payload} ->
+            spood_dns:send(Port, Payload),
+            spood_spoof:source(IP)
     end.
 
-filter(NS, [
-        #ether{},
+filter(NS, [#ether{},
         #ipv4{
             saddr = NS,
             daddr = IP
@@ -66,7 +109,6 @@ filter(NS, [
         },
         Payload
     ]) when Len > 0, Len < 512 ->
-    spood_dns:send(Port, Payload),
-    spood_spoof:source(IP);
+    {ok, IP, Port, Payload};
 filter(_,_) ->
-    ok.
+    false.
