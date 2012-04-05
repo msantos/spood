@@ -41,11 +41,6 @@ clients. spood might be useful if you're using a DNS tunnel like sods:
 
 # TODO
 
-* add a ping function to spood
-    * call ICMP ping for {192,168,213,1}, 24
-    * add each host that responds to a list
-    * call list strategy
-
 * support multiple name servers
 
 * add ability to turn on/off debug output

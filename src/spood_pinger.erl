@@ -1,4 +1,4 @@
-%% Copyright (c) 2010-2012, Michael Santos <michael.santos@gmail.com>
+%% Copyright (c) 2012, Michael Santos <michael.santos@gmail.com>
 %% All rights reserved.
 %%
 %% Redistribution and use in source and binary forms, with or without
@@ -28,43 +28,59 @@
 %% LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 %% ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 %% POSSIBILITY OF SUCH DAMAGE.
--module(spood).
--export([start/0,start/1]).
--export([nameserver/0, macaddr/1]).
+-module(spood_pinger).
 
+-export([start/1]).
+-export([range/2]).
 
-start() ->
-    start([]).
-start(Options) ->
-    Dev = proplists:get_value(dev, Options, hd(packet:default_interface())),
+-define(INTERVAL, 15*60000).   % 15 minute
 
-    Saddr = proplists:get_value(saddr, Options, discover),
-    Daddr = proplists:get_value(nameserver, Options, nameserver()),
-
-    Smac = proplists:get_value(srcmac, Options, macaddr({client, Dev})),
-    Dmac = proplists:get_value(dstmac, Options, macaddr({server, Daddr})),
-
-    spood_spoof:start_link(Dev, {Smac,Saddr}, {Dmac, Daddr}),
-    spood_dns:start_link(),
-    spawn(spood_pinger, start, [Dev]),
-    spawn(spood_snuff, start_link, [Dev, Daddr]).
-
-nameserver() ->
-    {ok, PL} = inet_parse:resolv(
-        proplists:get_value(resolv_conf, inet_db:get_rc(), "/etc/resolv.conf")),
-    proplists:get_value(nameserver, PL).
-
-macaddr({Type, Dev}) when is_binary(Dev) ->
-    macaddr({Type, binary_to_list(Dev)});
-macaddr({client, Dev}) when is_list(Dev) ->
+%% Populate the local ARP cache by periodically scanning the network
+start(Dev) when is_binary(Dev) ->
+    start(binary_to_list(Dev));
+start(Dev) when is_list(Dev) ->
     {ok, Ifs} = inet:getifaddrs(),
     Cfg = proplists:get_value(Dev, Ifs),
-    [MAC] = [ list_to_tuple(N) || {hwaddr, N} <- Cfg ],
-    MAC;
-macaddr({server, IPAddr}) ->
-    % Force an ARP cache entry
-    {ok, Socket} = gen_udp:open(0, [{active, false}]),
-    ok = gen_udp:send(Socket, IPAddr, 53, <<>>),
-    ok = gen_udp:close(Socket),
 
-    packet:arplookup(IPAddr).
+    [Addr] = [ {A,B,C,D} || {addr, {A,B,C,D}} <- Cfg ],
+    [Netmask] = [ {A,B,C,D} || {netmask, {A,B,C,D}} <- Cfg ],
+
+    {Network, Broadcast} = range(Addr, Netmask),
+
+    {ok, Socket} = gen_udp:open(0, [
+                {active, false}
+                ]),
+
+    poll(Socket, ipv4_to_int(Network)+1, ipv4_to_int(Broadcast)).
+
+range({A1,A2,A3,A4}, {M1,M2,M3,M4}) ->
+    Addr = (A1 bsl 24) bor (A2 bsl 16) bor (A3 bsl 8) bor A4,
+    Mask = (M1 bsl 24) bor (M2 bsl 16) bor (M3 bsl 8) bor M4,
+
+    {int_to_ipv4(Addr band Mask), int_to_ipv4(Addr bor (bnot Mask))}.
+
+int_to_ipv4(N) ->
+    <<A, B, C, D>> = <<N:4/unsigned-integer-unit:8>>,
+    {A,B,C,D}.
+
+ipv4_to_int({A,B,C,D}) ->
+    <<N:4/unsigned-integer-unit:8>> = <<A, B, C, D>>,
+    N.
+
+poll(Socket, Start, End) ->
+    scan(Socket, Start, End),
+    timer:sleep(?INTERVAL),
+    poll(Socket, Start, End).
+
+scan(Socket, Address, End) when Address < End ->
+    Port = crypto:rand_uniform(16#0FFF, 16#FFFF),
+
+%    error_logger:info_report([
+%            {address, int_to_ipv4(Address)},
+%            {port, Port}
+%            ]),
+
+    ok = gen_udp:send(Socket, int_to_ipv4(Address), Port, <<>>),
+    scan(Socket, Address+1, End);
+scan(_Socket, _Address, _End) ->
+    ok.
